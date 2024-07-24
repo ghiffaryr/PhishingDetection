@@ -1,0 +1,21 @@
+server:
+  servlet:
+    context_path: /api/v1
+embeddings:
+  model:
+    name: BAAI/bge-small-en-v1.5
+    kwargs:
+      trust_remote_code: true
+chroma:
+  splitter:
+    chunk_size: 1000
+    chunk_overlap: 50
+    separators: null
+    is_separator_regex: false
+  path: tmp/db/chroma
+data:
+  path: tmp/data
+models:
+  path: tmp/models
+log:
+  path: tmp/log

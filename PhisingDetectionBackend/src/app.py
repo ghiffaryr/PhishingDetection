@@ -8,7 +8,6 @@ import os
 from loguru import logger
 from utils.api_logger import APILogger
 from service.impl.rag_service_chroma_huggingface_impl import RAGServiceChromaHuggingFaceImpl
-from service.impl.model_service_impl import ModelServiceImpl
 
 DEFAULT_PREFIX = "/api/v0"
 try:

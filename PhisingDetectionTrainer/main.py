@@ -57,7 +57,7 @@ if __name__ == "__main__":
     set_seed(seed)    
 
     # Retrieve dataset and preprocess
-    df = get_dataset(dataset_name).dropna().head(100)
+    df = get_dataset(dataset_name).dropna()
     _, dataset = train_validation_test_split(
             df, train_size=train_size, has_validation=True
         )

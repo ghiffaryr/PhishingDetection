@@ -1,4 +1,4 @@
-# PhisingDetection
+# Phising Detection
 
 Three projects including
 - [Phishing Detection LLM Trainer](https://github.com/ghiffaryr/PhishingDetection/tree/main/PhishingDetectionBackend)

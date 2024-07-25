@@ -1,0 +1,13 @@
+data:
+  raw:
+    path: data/raw
+  processed:
+    path: data/processed
+  summary:
+    path: data/summary
+model:
+  experiments:
+    path: experiments
+
+
+

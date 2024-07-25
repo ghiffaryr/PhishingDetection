@@ -1,0 +1,111 @@
+{
+	"info": {
+		"_postman_id": "c31acba9-edf8-4b8c-8dae-3071199112cc",
+		"name": "RAG LLM Inference",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "36835877",
+		"_collection_link": "https://fata-organa-data-science.postman.co/workspace/Fata-Organa-Data-Science-Worksp~33486485-efa2-46d1-ab20-f82db94539e2/collection/36835877-c31acba9-edf8-4b8c-8dae-3071199112cc?action=share&source=collection_link&creator=36835877"
+	},
+	"item": [
+		{
+			"name": "Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "localhost:8000/api/v1/status"
+			},
+			"response": []
+		},
+		{
+			"name": "GPU Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "localhost:8000/api/v1/gpu_check"
+			},
+			"response": []
+		},
+		{
+			"name": "Upload File",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "postman-cloud:///1ef3df07-5381-45f0-8ce0-a32b08a0954e"
+						}
+					]
+				},
+				"url": "localhost:8000/api/v1/file/upload"
+			},
+			"response": []
+		},
+		{
+			"name": "Update Chroma Database",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"file\": \"/app/data/temp/monopoly.pdf\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "localhost:8000/api/v1/chroma/update"
+			},
+			"response": []
+		},
+		{
+			"name": "Batch Update Chroma Database",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": "localhost:8000/api/v1/chroma/batch_update"
+			},
+			"response": []
+		},
+		{
+			"name": "Generate Context",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"query_text\": \"How much total money does a player start with in Monopoly? (Answer with the number only)\",\r\n    \"k\": 5,\r\n    \"separator\": \"\\n\\n---\\n\\n\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "localhost:8000/api/v1/rag/generate_context"
+			},
+			"response": []
+		},
+		{
+			"name": "Generate",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"model_name\": \"google/flan-t5-base\",\r\n    \"prompt\": \"Classify below text as spam or ham:\\n\\n Did you catch the bus ? Are you frying an egg ? Did you make a tea? Are you eating your mom's left over dinner ? Do you feel my Love ?\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "localhost:8000/api/v1/model/generate"
+			},
+			"response": []
+		}
+	]
+}

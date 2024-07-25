@@ -19,7 +19,7 @@ except Exception as e:
     PREFIX = DEFAULT_PREFIX
 
 HOST = os.environ.get('HOST', '0.0.0.0')
-PORT = os.environ.get('PORT', '5000')
+PORT = os.environ.get('PORT', '8000')
 
 app = Flask(__name__)
 api = Api(app, 

@@ -96,7 +96,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"model_name\": \"google/flan-t5-base\",\r\n    \"prompt\": \"Classify below text as spam or ham:\\n\\n Did you catch the bus ? Are you frying an egg ? Did you make a tea? Are you eating your mom's left over dinner ? Do you feel my Love ?\"\r\n}",
+					"raw": "{\r\n    \"model_name\": \"ghiffaryr/phising-detection-peft-q_model-google_flan-t5-base_dataset-phisingpot_csdmc_train-0.8_seed-0\",\r\n    \"prompt\": \"Classify below text as spam or ham:\\n\\n Did you catch the bus ? Are you frying an egg ? Did you make a tea? Are you eating your mom's left over dinner ? Do you feel my Love ?\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"

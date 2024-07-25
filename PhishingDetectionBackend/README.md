@@ -3,7 +3,7 @@
 ## Configuration Steps
 1. Install Docker and start
 2. Create environment variables ".env" by referencing to ".env.default"
-3. Run on terminal below command
+3. Run below command on terminal
 `
 docker-compose up --build
 `

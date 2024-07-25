@@ -108,7 +108,6 @@ class ModelServiceImpl(ModelService):
         """
         inputs = self.tokenizer(prompt_template, return_tensors='pt').to(device="cuda:0")
         if self.is_peft:
-            input_ids = self.tokenizer(prompt_template, return_tensors="pt").to(device="cuda:0").input_ids
             output_ids = self.model.generate(input_ids=inputs["input_ids"],
                                              generation_config=GenerationConfig(max_new_tokens=max_new_tokens,
                                                                                 temperature=temperature,

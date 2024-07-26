@@ -28,9 +28,9 @@ if __name__ == "__main__":
     
     # Define configuration
     seed = 0
-    project_name = "phising-detection"
+    project_name = "phishing-detection"
     model_name = "google/flan-t5-base"
-    dataset_name = "phisingpot_csdmc"
+    dataset_name = "phishingpot_csdmc"
     train_size = 0.8
     is_peft = True
     is_quantization = True

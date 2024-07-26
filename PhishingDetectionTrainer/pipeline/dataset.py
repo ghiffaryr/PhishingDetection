@@ -26,8 +26,8 @@ def get_dataset(name: str) -> pd.DataFrame:
         return retrieve_sms()
     elif name == "spamassasin":
         return retrieve_spamassassin()
-    elif name == "phisingpot_csdmc":
-        return retrieve_phisingpot_csdmc()
+    elif name == "phishingpot_csdmc":
+        return retrieve_phishingpot_csdmc()
     else:
         return pd.read_csv(processed_data_path / Path(name) / Path("data.csv"))
     
@@ -193,26 +193,26 @@ def retrieve_spamassassin() -> None:
         return df
     return pd.read_csv(spamassassin_processed_data_csv_path)
 
-def retrieve_phisingpot():
-    phisingpot_raw_data_path = raw_data_path / Path("phisingpot")
-    phisingpot_processed_data_path = processed_data_path / Path("phisingpot")
+def retrieve_phishingpot():
+    phishingpot_raw_data_path = raw_data_path / Path("phishingpot")
+    phishingpot_processed_data_path = processed_data_path / Path("phishingpot")
 
     # Initialize dataset folder
-    phisingpot_raw_data_path.mkdir(parents=True, exist_ok=True)
-    phisingpot_processed_data_path.mkdir(parents=True, exist_ok=True)
+    phishingpot_raw_data_path.mkdir(parents=True, exist_ok=True)
+    phishingpot_processed_data_path.mkdir(parents=True, exist_ok=True)
 
     # Define processed data csv path
-    phisingpot_processed_data_csv_path = phisingpot_processed_data_path / Path("data.csv")
+    phishingpot_processed_data_csv_path = phishingpot_processed_data_path / Path("data.csv")
 
-    if not os.path.exists(phisingpot_processed_data_csv_path):
+    if not os.path.exists(phishingpot_processed_data_csv_path):
         # Download and extract
         url = "https://github.com/rf-peixoto/phishing_pot/archive/refs/heads/main.zip"
         with urlopen(url) as zurl:
             with ZipFile(BytesIO(zurl.read())) as zfile:
-                zfile.extractall(phisingpot_raw_data_path)
+                zfile.extractall(phishingpot_raw_data_path)
 
         # Iterate files
-        path = str(phisingpot_raw_data_path) + r"/phishing_pot-main/email/*"
+        path = str(phishingpot_raw_data_path) + r"/phishing_pot-main/email/*"
         data = []
 
         for fn in glob.glob(path):
@@ -228,9 +228,9 @@ def retrieve_phisingpot():
         df = df.drop_duplicates()
 
         # Save
-        df.to_csv(phisingpot_processed_data_csv_path, index=False)
+        df.to_csv(phishingpot_processed_data_csv_path, index=False)
         return df
-    return pd.read_csv(phisingpot_processed_data_csv_path)
+    return pd.read_csv(phishingpot_processed_data_csv_path)
 
 def retrieve_csdmc():
     csdmc_raw_data_path = raw_data_path / Path("csdmc")
@@ -271,33 +271,33 @@ def retrieve_csdmc():
         return df
     return pd.read_csv(csdmc_processed_data_csv_path)
 
-def retrieve_phisingpot_csdmc():
-    phisingpot_csdmc_processed_data_path = processed_data_path / Path("phisingpot_csdmc")
+def retrieve_phishingpot_csdmc():
+    phishingpot_csdmc_processed_data_path = processed_data_path / Path("phishingpot_csdmc")
 
     # Initialize dataset folder
-    phisingpot_csdmc_processed_data_path.mkdir(parents=True, exist_ok=True)
+    phishingpot_csdmc_processed_data_path.mkdir(parents=True, exist_ok=True)
 
     # Define processed data csv path
-    phisingpot_csdmc_processed_data_csv_path = phisingpot_csdmc_processed_data_path / Path("data.csv")
+    phishingpot_csdmc_processed_data_csv_path = phishingpot_csdmc_processed_data_path / Path("data.csv")
     
-    if not os.path.exists(phisingpot_csdmc_processed_data_csv_path):
-        df_phisingpot = retrieve_phisingpot().dropna()
+    if not os.path.exists(phishingpot_csdmc_processed_data_csv_path):
+        df_phishingpot = retrieve_phishingpot().dropna()
         df_csdmc = retrieve_csdmc().dropna()
 
-        min_size = min(len(df_phisingpot), len(df_csdmc))
+        min_size = min(len(df_phishingpot), len(df_csdmc))
 
         # Sample from both dataframes to the smaller size
-        sampled_df_phisingpot = df_phisingpot.sample(n=min_size, random_state=0)
+        sampled_df_phishingpot = df_phishingpot.sample(n=min_size, random_state=0)
         sampled_df_csdmc = df_csdmc.sample(n=min_size, random_state=0)
 
         # Concatenate the dataframes
-        df = pd.concat([sampled_df_phisingpot, sampled_df_csdmc])
+        df = pd.concat([sampled_df_phishingpot, sampled_df_csdmc])
         df = df.sample(frac=1).reset_index(drop=True)
         
         # Save
-        df.to_csv(phisingpot_csdmc_processed_data_csv_path, index=False)
+        df.to_csv(phishingpot_csdmc_processed_data_csv_path, index=False)
         return df
-    return pd.read_csv(phisingpot_csdmc_processed_data_csv_path)
+    return pd.read_csv(phishingpot_csdmc_processed_data_csv_path)
 
 def train_validation_test_split(df, train_size=0.8, has_validation=True):
     """Return a tuple (DataFrame, DatasetDict) with a custom train/validation/split"""

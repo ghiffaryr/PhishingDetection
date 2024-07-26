@@ -96,7 +96,11 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
+<<<<<<< HEAD
 					"raw": "{\r\n    \"model_name\": \"ghiffaryr/phishing-detection-peft-q_model-google_flan-t5-base_dataset-phishingpot_csdmc_train-0.8_seed-0\",\r\n    \"prompt\": \"Classify below text as spam or ham:\\n\\n Did you catch the bus ? Are you frying an egg ? Did you make a tea? Are you eating your mom's left over dinner ? Do you feel my Love ?\"\r\n}",
+=======
+					"raw": "{\r\n    \"model_name\": \"ghiffaryr/phising-detection-peft-q_model-google_flan-t5-base_dataset-phisingpot_csdmc_train-0.8_seed-0\",\r\n    \"prompt\": \"Classify below text as spam or ham:\\n\\n Did you catch the bus ? Are you frying an egg ? Did you make a tea? Are you eating your mom's left over dinner ? Do you feel my Love ?\"\r\n}",
+>>>>>>> 4260987291baa6d5d76f74e761d7643f67967732
 					"options": {
 						"raw": {
 							"language": "json"

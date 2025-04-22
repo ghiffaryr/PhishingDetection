@@ -1,6 +1,5 @@
 "use client";
 import styles from "./page.module.css";
-import QnAForm from "./components/QnAForm";
 import AppBar from "@mui/material/AppBar";
 import {
   Box,
@@ -15,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import axios from "axios";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function Home() {
   const [inputs, setInputs] = useState({
@@ -25,35 +24,50 @@ export default function Home() {
 
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleChange(e: any) {
-    setInputs({
-      ...inputs,
-      [e.target.name]: e.target.value,
-    });
-  }
+  // Refs for dynamic focus chaining
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInputs((prev) => ({
+      ...prev,
+      [event.target.name]: event.target.value,
+    }));
+  };
+
+  const handleKeyNext = (event: React.KeyboardEvent, nextIndex: number) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const next = inputRefs.current[nextIndex];
+      if (next) next.focus();
+    }
+  };
+
+  const handleKeyNextSubmit = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit();
+    }
+  };
 
   const handleSubmit = async () => {
-    axios.defaults.headers.common = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "*",
-      "Access-Control-Allow-Headers": "*",
-    };
+    setLoading(true);
+    setError("");
     try {
-      let { status, data } = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_HOST}:${process.env.NEXT_PUBLIC_BACKEND_API_PORT}/${process.env.NEXT_PUBLIC_BACKEND_API_PREFIX}/model/generate`,
+      const { data } = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_HOST}:${process.env.NEXT_PUBLIC_API_PORT}/${process.env.NEXT_PUBLIC_API_PREFIX}/model/generate`,
         {
           model_name: inputs.model_name,
           prompt: inputs.prompt,
         }
       );
-      console.log(data);
-      for (let cur_result of data.result) {
-        setAnswer(cur_result.completion);
-      }
-      setAnswer(data.result);
-    } catch (error) {
-      console.log(error);
+      setAnswer(data.result.completion);
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong while fetching the answer.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,12 +75,12 @@ export default function Home() {
     <>
       <AppBar position="static">
         <Container
-          style={{
-            flexDirection: "row",
+          sx={{
             display: "flex",
+            flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            padding: 5,
+            py: 1,
           }}
         >
           <Typography
@@ -80,52 +94,70 @@ export default function Home() {
           </Typography>
         </Container>
       </AppBar>
-      <>
-        <Container
-          style={{
-            marginTop: 20,
-            flexDirection: "column",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Card variant="outlined" style={{ minWidth: 512 }}>
+
+      <Container
+        sx={{
+          mt: 4,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <Card variant="outlined" sx={{ minWidth: 512 }}>
+          <CardContent>
+            <TextField
+              fullWidth
+              label="Model Name"
+              name="model_name"
+              placeholder="Enter model name"
+              onChange={handleChange}
+              value={inputs.model_name}
+              onKeyDown={(e) => handleKeyNext(e, 1)}
+              inputRef={(el) => (inputRefs.current[0] = el)}
+            />
+          </CardContent>
+
+          <CardContent>
+            <TextField
+              fullWidth
+              multiline
+              label="Prompt"
+              name="prompt"
+              placeholder="Classify as ham or spam: ..."
+              onChange={handleChange}
+              value={inputs.prompt}
+              onKeyDown={handleKeyNextSubmit}
+              inputRef={(el) => (inputRefs.current[1] = el)}
+            />
+          </CardContent>
+
+          <CardContent>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? "Generating..." : "Generate"}
+            </Button>
+          </CardContent>
+
+          {error && (
             <CardContent>
-              <TextField
-                fullWidth
-                label="model_name"
-                name="model_name"
-                placeholder="Model name"
-                onChange={handleChange}
-                value={inputs.model_name}
-              />
+              <Typography color="error">{error}</Typography>
             </CardContent>
-            <CardContent>
-              <TextField
-                fullWidth
-                label="prompt"
-                name="prompt"
-                placeholder="Classify as ham or spam: "
-                multiline
-                onChange={handleChange}
-                value={inputs.prompt}
-              />
-            </CardContent>
-            <CardContent>
-              <Button size="small" variant="contained" onClick={handleSubmit}>
-                Generate
-              </Button>
-            </CardContent>
-            <CardContent>
-              <Typography>Result</Typography>
-              <Card variant="outlined">
-                <CardContent></CardContent>
-              </Card>
-            </CardContent>
-          </Card>
-        </Container>
-      </>
+          )}
+
+          <CardContent>
+            <Typography variant="subtitle1">Result</Typography>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography>{answer}</Typography>
+              </CardContent>
+            </Card>
+          </CardContent>
+        </Card>
+      </Container>
     </>
   );
 }

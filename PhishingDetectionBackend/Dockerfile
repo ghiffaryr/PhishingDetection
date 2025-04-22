@@ -45,10 +45,11 @@ COPY ./Pipfile /app/
 COPY ./Pipfile.lock /app/
 COPY ./src /app/src
 
+RUN pipenv lock --clear
 RUN pipenv install --deploy --system
 RUN pipenv install --deploy
 
 WORKDIR /app/src
-CMD pipenv run gunicorn -b 0.0.0.0:8000 app:app --reload
+CMD pipenv run uvicorn start_application:StartApplication --host 0.0.0.0 --port 8000
 
 EXPOSE 8000

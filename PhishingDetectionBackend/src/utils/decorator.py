@@ -7,12 +7,12 @@ from loguru import logger
 class Handler:
     def error(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             names = func.__qualname__.split(".")
             endpoint_name = f"{names[0]}.{names[1]}"
             try:
                 logger.info(f"Entering {endpoint_name} process")
-                res = func(*args, **kwargs)
+                res = await func(*args, **kwargs)
                 logger.success(f"Return result of {endpoint_name} process")
             except Exception as e:
                 error_description = repr(e)

@@ -1,20 +1,20 @@
-from flask_restx import Resource
+import falcon
 from utils.decorator import Handler, Form
 from utils.gpu_check import check_gpu
 
-class StatusController(Resource):
+class StatusController:
     @Handler.error
-    def get(self):
+    async def on_get(self, req, resp) -> None:
         res = {
             'title': 'Status Check',
             'status': '200',
             'description': 'Service is running.'
         }
-        return res
+        resp.media = res
 
-class GPUCheckController(Resource):
+class GPUCheckController:
     @Handler.error
-    def get(self):
+    async def on_get(self, req, resp) -> None:
         gpu_info = check_gpu()
         res = {
             'title': 'GPU Check',
@@ -22,4 +22,4 @@ class GPUCheckController(Resource):
             'description': 'GPU check successful.',
             'result': gpu_info
         }
-        return res
+        resp.media = res

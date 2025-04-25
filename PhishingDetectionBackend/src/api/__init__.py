@@ -1,23 +1,18 @@
-from typing import Dict
-from api.status_controller import (
-    StatusController,
-    GPUCheckController
-)
 from api.rag_controller import (
     UploadController,
     UpdateChromaDatabaseController,
     BatchUpdateChromaDatabaseController,
-    GenerateContextFromChromaDatabaseController
+    GenerateContextFromChromaDatabaseController,
+    ProcessAndGetContextController
 )
-from api.model_controller import (
-    GenerateModelController
-)
-ROUTES: Dict[str, any] = {
-    "/status": StatusController(),
-    "/file/upload": UploadController(),
-    "/chroma/update": UpdateChromaDatabaseController(),
-    "/chroma/batch_update": BatchUpdateChromaDatabaseController(),
-    "/rag/generate_context": GenerateContextFromChromaDatabaseController(),
-    "/model/generate": GenerateModelController(),
-    "/gpu_check": GPUCheckController(),
- }
+from api.model_controller import ModelGenerateController
+
+# Define all API routes
+ROUTES = {
+    '/model/generate': ModelGenerateController(),
+    '/file/upload': UploadController(),
+    '/rag/update': UpdateChromaDatabaseController(),
+    '/rag/update_batch': BatchUpdateChromaDatabaseController(),
+    '/rag/context': GenerateContextFromChromaDatabaseController(),
+    '/rag/process-and-get-context': ProcessAndGetContextController(),
+}

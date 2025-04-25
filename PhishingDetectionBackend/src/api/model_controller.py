@@ -3,7 +3,7 @@ from utils.decorator import Handler, Form
 from service.impl.model_service_impl import ModelServiceImpl
 import torch
 
-class GenerateModelController:
+class ModelGenerateController:
     @Handler.error
     async def on_post(self, req, resp) -> None:
         form = await req.get_media()

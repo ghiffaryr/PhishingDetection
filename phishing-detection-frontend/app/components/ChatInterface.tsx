@@ -1,11 +1,11 @@
 import { Card, CardContent, Typography } from "@mui/material";
-import { ChatMessage, ThemeConfig } from "../types/chat";
+import { ChatMessage, ThemeConfig, ChatSession } from "../types/chat";
 import ChatArea from "./ChatArea";
 import ChatForm from "./ChatForm";
 
 interface ChatInterfaceProps {
   theme: ThemeConfig;
-  chatSessions: { id: string; messages: ChatMessage[]; createdAt: Date }[];
+  chatSessions: ChatSession[]; // Update to use the ChatSession type
   activeSessionId: string;
   isHydrated: boolean;
   isMobile: boolean;
@@ -23,6 +23,7 @@ interface ChatInterfaceProps {
   isTyping: boolean;
   error: string;
   loading: boolean;
+  onFileContextGenerated?: (context: string, fileName: string) => void;
 }
 
 export const ChatInterface = ({
@@ -42,6 +43,7 @@ export const ChatInterface = ({
   isTyping,
   error,
   loading,
+  onFileContextGenerated,
 }: ChatInterfaceProps) => {
   return (
     <Card
@@ -107,6 +109,7 @@ export const ChatInterface = ({
             loading={loading}
             error={error}
             isMobile={isMobile}
+            onFileContextGenerated={onFileContextGenerated}
           />
         </form>
       </CardContent>

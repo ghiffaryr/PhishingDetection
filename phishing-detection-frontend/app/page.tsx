@@ -121,30 +121,62 @@ export default function Home() {
   // This state tracks if we're in the submission process
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // File context state to temporarily store context from uploaded file
+  const [fileContext, setFileContext] = useState<{
+    context: string;
+    fileName: string;
+  } | null>(null);
+
   // Modified submit handler that clears old content first
   const handleSubmit = async () => {
-    // Set submitting state to true to show we're in the process
     setIsSubmitting(true);
 
     try {
-      // Hide previous answers during submission
       setShouldShowAnswer(false);
-
-      // Small delay to ensure UI updates before submission
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      // Proceed with chat submission
-      const result = await submitChat(chatHistory, setChatHistory);
+      // If we have file context, set it in the prompt
+      if (fileContext) {
+        // Create an enhanced prompt that includes file context for the API
+        // But DON'T show this in the UI - the context is only for the backend
+        const enhancedPrompt = `The user is asking about the content of the file "${fileContext.fileName}". Here's the user's question: ${inputs.prompt}\n\nRelevant file context: ${fileContext.context}`;
 
-      // Allow showing answers again after a small delay
-      setTimeout(() => setShouldShowAnswer(true), 100);
+        // Proceed with chat submission with enhanced prompt
+        const result = await submitChat(
+          chatHistory,
+          setChatHistory,
+          enhancedPrompt // The enhanced prompt is only sent to API, not shown to user
+        );
 
-      return result;
+        // Clear file context after submission
+        setFileContext(null);
+        setTimeout(() => setShouldShowAnswer(true), 100);
+        return result;
+      } else {
+        // Proceed with regular chat submission
+        const result = await submitChat(chatHistory, setChatHistory);
+
+        // Allow showing answers again after a small delay
+        setTimeout(() => setShouldShowAnswer(true), 100);
+
+        return result;
+      }
     } catch (error) {
       console.error("Chat submission error:", error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handle file context generated from file uploader
+  const handleFileContextGenerated = (context: string, fileName: string) => {
+    // Store the context and file name for the next message
+    setFileContext({ context, fileName });
+
+    // We don't need to add any visual feedback showing the context content
+    console.log(
+      `File "${fileName}" processed and ready to use in the next message.`
+    );
   };
 
   // Get current theme configuration
@@ -372,6 +404,7 @@ export default function Home() {
             isTyping={isTyping}
             error={error}
             loading={loading || isSubmitting}
+            onFileContextGenerated={handleFileContextGenerated}
           />
         </div>
       </Container>

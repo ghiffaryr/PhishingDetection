@@ -102,19 +102,24 @@ export const useChatCompletion = () => {
 
   const handleSubmit = async (
     chatHistory: ChatMessage[],
-    updateChatHistory: (updatedHistory: ChatMessage[]) => void
+    updateChatHistory: (updatedHistory: ChatMessage[]) => void,
+    overridePrompt?: string
   ) => {
-    // Store the current chat history and update function in refs so the typing effect can access them
+    // Store the current chat history and update function in refs
     chatHistoryRef.current = chatHistory;
     updateChatHistoryRef.current = updateChatHistory;
 
-    if (!inputs.prompt.trim()) return;
+    // Get the display prompt (what's shown in UI) vs API prompt (includes file context)
+    const apiPrompt = overridePrompt || inputs.prompt;
+    const displayPrompt = inputs.prompt; // Always show the original prompt to the user
 
-    // Add user message to chat history
+    if (!displayPrompt.trim()) return;
+
+    // Add user message to chat history with the DISPLAY prompt (not the enhanced one)
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: inputs.prompt,
+      content: displayPrompt, // Only show the original user prompt in UI
       timestamp: new Date(),
     };
 
@@ -142,9 +147,7 @@ export const useChatCompletion = () => {
         chatHistory.length > 0
           ? chatHistory
               .map((msg) => {
-                // Ensure each message has proper content formatting
                 const content = msg.content || "";
-                // Use a consistent role prefix for each message
                 const rolePrefix = msg.role === "user" ? "User" : "Assistant";
                 return `${rolePrefix}: ${content}`;
               })
@@ -152,14 +155,14 @@ export const useChatCompletion = () => {
           : "";
 
       console.log("Building context:", context);
-      console.log("Current prompt:", inputs.prompt);
+      console.log("Current prompt:", apiPrompt); // Log the API prompt (may include file context)
 
-      // Send request with separate prompt and context fields
+      // Send request with API prompt (which may include file context)
       const { data } = await axios.post(
         `${process.env.NEXT_PUBLIC_API_HOST}:${process.env.NEXT_PUBLIC_API_PORT}/${process.env.NEXT_PUBLIC_API_PREFIX}/model/generate`,
         {
           model_name: inputs.model_name,
-          prompt: inputs.prompt,
+          prompt: apiPrompt, // Use the potentially enhanced prompt for the API
           context: context,
         }
       );

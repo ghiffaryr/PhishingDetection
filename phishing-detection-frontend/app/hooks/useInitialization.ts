@@ -35,37 +35,34 @@ export const useInitialization = () => {
       if (savedSessions) {
         try {
           const parsed = JSON.parse(savedSessions);
-          // Convert string dates back to Date objects
-          const loadedSessions = parsed.map((session: any) => ({
-            ...session,
-            createdAt: new Date(session.createdAt),
-            messages: session.messages.map((msg: any) => ({
-              ...msg,
-              timestamp: new Date(msg.timestamp),
-            })),
-          }));
-
-          setInitialChatSessions(loadedSessions);
+          // Use the parsed sessions directly as they should already match the ChatSession interface
+          setInitialChatSessions(parsed);
         } catch (e) {
           console.error("Error parsing stored chat sessions:", e);
 
-          // Initialize with a new empty session on error
+          // Initialize with a new empty session on error with correct properties
           const newSessionId = Date.now().toString();
-          const newSession = {
+          const timestamp = new Date().toISOString();
+          const newSession: ChatSession = {
             id: newSessionId,
+            title: "New conversation",
             messages: [],
-            createdAt: new Date(),
+            created: timestamp,
+            lastUpdated: timestamp,
           };
 
           setInitialChatSessions([newSession]);
         }
       } else {
-        // No saved sessions, create a new one
+        // No saved sessions, create a new one with the correct ChatSession shape
         const newSessionId = Date.now().toString();
-        const newSession = {
+        const timestamp = new Date().toISOString();
+        const newSession: ChatSession = {
           id: newSessionId,
+          title: "New conversation",
           messages: [],
-          createdAt: new Date(),
+          created: timestamp,
+          lastUpdated: timestamp,
         };
 
         setInitialChatSessions([newSession]);

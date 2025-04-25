@@ -15,8 +15,10 @@ class GenerateModelController:
             "top_k": 50,
             "top_p": 1.0,
             "repetition_penalty": 1.0,
-            "load_in_4bit": True,
-            "compute_dtype": "bfloat16"
+            "quantization": "8bit",
+            "compute_dtype": "bfloat16",
+            "use_double_quant": True,
+            "quant_type": "nf4"
         }
         form = Form.validator(form, required_keys, default_optional_keys)
 
@@ -32,12 +34,18 @@ class GenerateModelController:
         }
 
         # Convert compute_dtype string to torch dtype
-        compute_dtype = dtype_map.get(form["compute_dtype"], torch.bfloat16)  # Default to torch.bfloat16
+        compute_dtype = dtype_map.get(form["compute_dtype"], torch.bfloat16)
+
+        # Validate quantization option
+        if form["quantization"] not in ["none", "4bit", "8bit"]:
+            form["quantization"] = "8bit"  # Default to 8bit if invalid value
 
         ModelService = ModelServiceImpl.instance(
             model_name=form['model_name'],
-            load_in_4bit=form["load_in_4bit"],
-            compute_dtype=compute_dtype
+            quantization=form["quantization"],
+            compute_dtype=compute_dtype,
+            use_double_quant=form["use_double_quant"],
+            quant_type=form["quant_type"]
         )
         result = ModelService.generate(
             prompt=form["prompt"],

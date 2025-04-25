@@ -1,12 +1,14 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Literal
 import os
 from utils.config import Config
 from loguru import logger
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, AutoModelForCausalLM, AutoConfig, GenerationConfig
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, AutoModelForCausalLM, AutoConfig, GenerationConfig, BitsAndBytesConfig
 from peft import PeftConfig, PeftModel
 from service.model_service import ModelService
 from munch import munchify
 import torch
+import gc
+import time
 
 class ModelServiceImpl(ModelService):
     _instance = None
@@ -17,62 +19,122 @@ class ModelServiceImpl(ModelService):
     @classmethod
     def instance(cls, 
                  model_name: str,
-                 load_in_4bit: bool = False,
-                 compute_dtype: torch.dtype = torch.float16):
+                 quantization: Literal["none", "4bit", "8bit"] = "8bit",  # Single parameter for quantization type
+                 compute_dtype: torch.dtype = torch.bfloat16,
+                 use_double_quant: bool = True,
+                 quant_type: str = "nf4"):
+        """
+        Get or create a model service instance.
+        
+        Args:
+            model_name: The name/path of the model to load
+            quantization: Type of quantization to use ("none", "4bit", or "8bit")
+                          8-bit is faster to load but less precise than 4-bit
+            compute_dtype: Data type for computation (torch.float16 recommended for most GPUs)
+            use_double_quant: Whether to use double quantization (for 4-bit only)
+            quant_type: Quantization type ("nf4" or "fp4", for 4-bit only)
+        """
         if cls._instance is not None:
             if model_name != cls._instance.model_name:
-                # Use unload_model instead of directly deleting
+                # Unload the current model before loading a new one
                 cls._instance.unload_model()
                 cls._instance = None
         if cls._instance is None:
             cls._instance = cls.__new__(cls)
             cls._instance._init_instance(model_name=model_name, 
-                                         load_in_4bit=load_in_4bit, 
-                                         compute_dtype=compute_dtype)
+                                         quantization=quantization,
+                                         compute_dtype=compute_dtype,
+                                         use_double_quant=use_double_quant,
+                                         quant_type=quant_type)
         return cls._instance
 
     def _init_instance(self, 
                        model_name: str,
-                       load_in_4bit: bool,
-                       compute_dtype: torch.dtype):
+                       quantization: str,
+                       compute_dtype: torch.dtype,
+                       use_double_quant: bool = True,
+                       quant_type: str = "nf4"):
         self.model_name = model_name
         self.model = None
         self.tokenizer = None
-        self.load_in_4bit = load_in_4bit
+        self.quantization = quantization.lower()  # Normalize to lowercase
         self.compute_dtype = compute_dtype
+        self.use_double_quant = use_double_quant
+        self.quant_type = quant_type
         self.initialize_model(model_name)
 
     def initialize_model(self, 
                          model_name: str) -> None:
-        model_dir = "./" + Config.get().models.path + "/" +  model_name.replace('/', '_')
+        start_time = time.time()
+        logger.info(f"Starting model initialization for {model_name}")
+        
+        # Force garbage collection before loading model
+        gc.collect()
+        torch.cuda.empty_cache()
+        
+        model_dir = "./" + Config.get().models.path + "/" + model_name.replace('/', '_')
         model_name = model_dir if os.path.exists(model_dir) else model_name
 
         config = munchify({"is_encoder_decoder": False})
         peft_config = munchify({"base_model_name_or_path": model_name})
         self.is_peft = False
+        
+        # Check if we can load from local cache first for better performance
+        logger.info(f"Checking if model exists in local cache: {model_dir}")
+        
         try:
             logger.info(f"Loading PEFT model configuration")
             peft_config = PeftConfig.from_pretrained(model_name, token=os.getenv("HF_TOKEN"))
             self.is_peft = True
             config = AutoConfig.from_pretrained(peft_config.base_model_name_or_path,
-                                            trust_remote_code=True)
-        except:
-            config = AutoConfig.from_pretrained(model_name,
-                                                trust_remote_code=True)
+                                                trust_remote_code=True,
+                                                use_auth_token=os.getenv("HF_TOKEN"))
+        except Exception as e:
+            logger.info(f"Not a PEFT model or error loading PEFT config: {e}")
+            try:
+                config = AutoConfig.from_pretrained(model_name,
+                                                    trust_remote_code=True,
+                                                    use_auth_token=os.getenv("HF_TOKEN"))
+            except Exception as e:
+                logger.error(f"Error loading model config: {e}")
+                raise
             
         model_kwargs = {
             "trust_remote_code": True,
             "token": os.getenv("HF_TOKEN"),
-            "device_map": "auto"
+            "device_map": "auto",
+            "low_cpu_mem_usage": True,
+            "use_safetensors": True,
+            "torch_dtype": self.compute_dtype,  # Explicitly set default dtype
         }
 
-        if self.load_in_4bit:
-            logger.info("Loading model with 4-bit precision")
+        # Apply quantization based on the single parameter
+        if self.quantization == "4bit":
+            logger.info(f"Loading model with 4-bit precision (type: {self.quant_type}, double quant: {self.use_double_quant})")
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=self.compute_dtype,
+                bnb_4bit_use_double_quant=self.use_double_quant,
+                bnb_4bit_quant_type=self.quant_type
+            )
             model_kwargs.update({
-                "load_in_4bit": True,
-                "torch_dtype": self.compute_dtype
+                "quantization_config": quantization_config
             })
+        elif self.quantization == "8bit":
+            logger.info("Loading model with 8-bit precision (faster loading)")
+            quantization_config = BitsAndBytesConfig(
+                load_in_8bit=True,
+                bnb_8bit_compute_dtype=self.compute_dtype,
+            )
+            model_kwargs.update({
+                "quantization_config": quantization_config
+            })
+        else:
+            logger.info("Loading model without quantization (full precision)")
 
+        logger.info(f"Model will be loaded with settings: {model_kwargs}")
+        
+        loading_start = time.time()
         if config.is_encoder_decoder:
             logger.info(f"Loading Seq2Seq model: {model_name}")
             self.model = AutoModelForSeq2SeqLM.from_pretrained(
@@ -85,17 +147,36 @@ class ModelServiceImpl(ModelService):
                 peft_config.base_model_name_or_path if self.is_peft else model_name, 
                 **model_kwargs
             )
+        loading_time = time.time() - loading_start
+        logger.info(f"Base model loaded in {loading_time:.2f} seconds")
         
         if self.is_peft:
             logger.info("Applying PEFT adapter")
+            peft_start = time.time()
             self.model = PeftModel.from_pretrained(self.model, model_name).to("cuda:0")
+            peft_time = time.time() - peft_start
+            logger.info(f"PEFT adapter loaded in {peft_time:.2f} seconds")
 
-        self.tokenizer = AutoTokenizer.from_pretrained(peft_config.base_model_name_or_path if self.is_peft else model_name, 
-                                                       trust_remote_code=True,
-                                                       token=os.getenv("HF_TOKEN"))
+        logger.info("Loading tokenizer")
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            peft_config.base_model_name_or_path if self.is_peft else model_name, 
+            trust_remote_code=True,
+            token=os.getenv("HF_TOKEN"),
+            use_fast=True  # Use fast tokenizer when available
+        )
+        
+        # Load and save tokenizer separately to avoid re-loading model
         if not os.path.exists(model_dir):
-            self.model.save_pretrained(model_dir)
-            self.tokenizer.save_pretrained(model_dir)
+            logger.info(f"Saving model to {model_dir} for faster loading next time")
+            try:
+                self.model.save_pretrained(model_dir, safe_serialization=True)
+                self.tokenizer.save_pretrained(model_dir)
+                logger.info(f"Model and tokenizer saved successfully to {model_dir}")
+            except Exception as e:
+                logger.error(f"Error saving model locally: {e}")
+        
+        total_time = time.time() - start_time
+        logger.info(f"Model initialization completed in {total_time:.2f} seconds")
 
     def generate(self,
                 prompt: str,
@@ -191,13 +272,20 @@ class ModelServiceImpl(ModelService):
         """Unload the model from GPU to free up memory."""
         if self.model is not None:
             logger.info(f"Unloading model {self.model_name} from GPU")
-            # Move model to CPU first
-            self.model.to("cpu")
-            # Clear CUDA cache
-            torch.cuda.empty_cache()
-            # Delete model and tokenizer references
-            del self.model
-            del self.tokenizer
-            self.model = None
-            self.tokenizer = None
-            logger.info("Model unloaded and GPU memory cleared")
+            try:
+                # Move model to CPU first
+                self.model.to("cpu")
+                
+                # Delete model and tokenizer references
+                del self.model
+                del self.tokenizer
+                
+                # Run garbage collection and clear CUDA cache
+                gc.collect()
+                torch.cuda.empty_cache()
+                
+                self.model = None
+                self.tokenizer = None
+                logger.info("Model unloaded and GPU memory cleared")
+            except Exception as e:
+                logger.error(f"Error unloading model: {e}")

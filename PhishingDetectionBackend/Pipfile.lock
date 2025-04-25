@@ -2669,11 +2669,11 @@
         },
         "sentry-sdk": {
             "hashes": [
-                "sha256:759e019c41551a21519a95e6cef6d91fb4af1054761923dadaee2e6eca9c02c7",
-                "sha256:e99390e3f217d13ddcbaeaed08789f1ca614d663b345b9da42e35ad6b60d696a"
+                "sha256:90f4f883f9eff294aff59af3d58c2d1b64e3927b28d5ada2b9b41f5aeda47daf",
+                "sha256:c58935bfff8af6a0856d37e8adebdbc7b3281c2b632ec823ef03cd108d216ff0"
             ],
             "markers": "python_version >= '3.6'",
-            "version": "==2.26.1"
+            "version": "==2.27.0"
         },
         "setproctitle": {
             "hashes": [
@@ -2768,11 +2768,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:9828422e7541213b0aacb6e10bbf9dd8febeaa45a48570e09b6d100e063fc9f9",
-                "sha256:b9ab3a104bedb292323f53797b00864e10e434a3ab3906813a7169e4745b912a"
+                "sha256:128ce7b8f33c3079fd1b067ecbb4051a66e8526e7b65f6cec075dfc650ddfa88",
+                "sha256:e147c0549f27767ba362f9da434eab9c5dc0045d5304feb602a0af001089fc51"
             ],
             "markers": "python_version >= '3.9'",
-            "version": "==79.0.0"
+            "version": "==79.0.1"
         },
         "shellingham": {
             "hashes": [

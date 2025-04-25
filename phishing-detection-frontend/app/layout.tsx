@@ -3,15 +3,15 @@ import { StyledRoot } from "./StyledRoot";
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html>
+    <html lang="en">
       <head>
-        <title>RAG QnA</title>
+        <title>AI Assistant</title>
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <StyledRoot>{children}</StyledRoot>
       </body>
     </html>

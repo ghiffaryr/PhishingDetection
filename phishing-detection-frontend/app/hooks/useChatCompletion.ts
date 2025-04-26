@@ -23,9 +23,68 @@ export const useChatCompletion = () => {
     () => {}
   );
 
+  // Enhanced sanitization function to handle repeated instruction patterns
+  const sanitizeResponse = (text: string): string => {
+    if (!text) return "";
+
+    // Target the specific instruction patterns that are appearing
+    const instructionPatterns = [
+      "Use above context if useful.",
+      "Please respond to the following task.",
+      "Use above context if useful. Please respond to the following task.",
+    ];
+
+    // First pass: Remove all occurrences of exact instruction patterns
+    let cleanedText = text;
+    instructionPatterns.forEach((pattern) => {
+      // Create a regex that will match all occurrences globally with optional whitespace
+      const patternRegex = new RegExp(
+        pattern.replace(/\./g, "\\.").replace(/\s+/g, "\\s+"),
+        "gi"
+      );
+      cleanedText = cleanedText.replace(patternRegex, "");
+    });
+
+    // Second pass: Handle specific instruction patterns with flexible spacing and punctuation
+    const flexiblePatterns = [
+      /use\s+above\s+context\s+if\s+useful[.,]?\s*/gi,
+      /please\s+respond\s+to\s+the\s+following\s+task[.,]?\s*/gi,
+    ];
+
+    flexiblePatterns.forEach((pattern) => {
+      cleanedText = cleanedText.replace(pattern, "");
+    });
+
+    // Trim any extra whitespace that might be left after removing instructions
+    return cleanedText.trim();
+  };
+
+  // Modified context creation to prevent instruction text from being included
+  const createCleanContext = (history: ChatMessage[]): string => {
+    if (history.length === 0) return "";
+
+    return history
+      .map((msg) => {
+        // Clean the message content before using it in context
+        let content = msg.content || "";
+
+        // If it's an assistant message, sanitize it to prevent instruction repetition
+        if (msg.role === "assistant") {
+          content = sanitizeResponse(content);
+        }
+
+        const rolePrefix = msg.role === "user" ? "User" : "Assistant";
+        return `${rolePrefix}: ${content}`;
+      })
+      .join("\n\n");
+  };
+
   // Typing effect for assistant messages
   useEffect(() => {
     if (!answer) return;
+
+    // Apply sanitization before starting the typing effect
+    const cleanAnswer = sanitizeResponse(answer);
 
     setDisplayedAnswer("");
     setIsTyping(true);
@@ -34,14 +93,14 @@ export const useChatCompletion = () => {
     const typingSpeed = 15; // ms per character
 
     const typingInterval = setInterval(() => {
-      if (currentIndex < answer.length) {
-        setDisplayedAnswer(answer.substring(0, currentIndex + 1));
+      if (currentIndex < cleanAnswer.length) {
+        setDisplayedAnswer(cleanAnswer.substring(0, currentIndex + 1));
         currentIndex++;
       } else {
         clearInterval(typingInterval);
         setIsTyping(false);
 
-        // When typing is complete, ensure the assistant message has the final content
+        // When typing is complete, ensure the assistant message has the cleaned content
         if (
           currentTypingMessageId &&
           chatHistoryRef.current.length > 0 &&
@@ -49,7 +108,7 @@ export const useChatCompletion = () => {
         ) {
           const updatedHistory = chatHistoryRef.current.map((msg) =>
             msg.id === currentTypingMessageId
-              ? { ...msg, content: answer }
+              ? { ...msg, content: cleanAnswer }
               : msg
           );
 
@@ -141,40 +200,33 @@ export const useChatCompletion = () => {
     setError("");
 
     try {
-      // Create context from previous messages
+      // Create CLEAN context from previous messages to avoid instruction repetition
       console.log("Chat history:", chatHistory);
-      const context =
-        chatHistory.length > 0
-          ? chatHistory
-              .map((msg) => {
-                const content = msg.content || "";
-                const rolePrefix = msg.role === "user" ? "User" : "Assistant";
-                return `${rolePrefix}: ${content}`;
-              })
-              .join("\n\n")
-          : "";
+      const context = createCleanContext(chatHistory);
 
       console.log("Building context:", context);
-      console.log("Current prompt:", apiPrompt); // Log the API prompt (may include file context)
+      console.log("Current prompt:", apiPrompt);
 
       // Send request with API prompt (which may include file context)
       const { data } = await axios.post(
         `${process.env.NEXT_PUBLIC_API_HOST}:${process.env.NEXT_PUBLIC_API_PORT}/${process.env.NEXT_PUBLIC_API_PREFIX}/model/generate`,
         {
           model_name: inputs.model_name,
-          prompt: apiPrompt, // Use the potentially enhanced prompt for the API
+          prompt: apiPrompt,
           context: context,
         }
       );
 
-      setAnswer(data.result.completion);
+      // Apply sanitization immediately when receiving the API response
+      const sanitizedCompletion = sanitizeResponse(data.result.completion);
+      setAnswer(sanitizedCompletion);
 
       // Update the chat history reference with the new history including the placeholder
       chatHistoryRef.current = [
         ...newChatHistory,
         {
           ...assistantPlaceholder,
-          content: data.result.completion,
+          content: sanitizedCompletion,
         },
       ];
 
@@ -218,7 +270,7 @@ export const useChatCompletion = () => {
           ...newChatHistory,
           {
             ...assistantPlaceholder,
-            content: data.result.completion,
+            content: sanitizedCompletion,
           },
         ],
       };

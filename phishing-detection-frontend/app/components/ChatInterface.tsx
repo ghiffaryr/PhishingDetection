@@ -109,6 +109,7 @@ export const ChatInterface = ({
             loading={loading}
             error={error}
             isMobile={isMobile}
+            isTyping={isTyping} // Pass isTyping prop
             onFileContextGenerated={onFileContextGenerated}
           />
         </form>

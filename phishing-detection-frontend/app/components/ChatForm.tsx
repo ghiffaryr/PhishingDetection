@@ -27,6 +27,7 @@ interface ChatFormProps {
   loading: boolean;
   error: string;
   isMobile: boolean;
+  isTyping: boolean; // Add isTyping prop
   onFileContextGenerated?: (context: string, fileName: string) => void;
 }
 
@@ -40,6 +41,7 @@ export const ChatForm = ({
   loading,
   error,
   isMobile,
+  isTyping, // Add isTyping to destructuring
   onFileContextGenerated,
 }: ChatFormProps) => {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
@@ -261,7 +263,7 @@ export const ChatForm = ({
         value={inputs.model_name}
         onKeyDown={(e) => handleKeyNext(e, 1)}
         inputRef={(el) => (inputRefs.current[0] = el)}
-        disabled={loading || fileProcessingState.isProcessing}
+        disabled={loading || fileProcessingState.isProcessing || isTyping} // Add isTyping
         sx={{
           ...textFieldStyles,
           mb: 2,
@@ -279,7 +281,7 @@ export const ChatForm = ({
         value={inputs.prompt}
         onKeyDown={handleKeyNextSubmit}
         inputRef={(el) => (inputRefs.current[1] = el)}
-        disabled={loading || fileProcessingState.isProcessing}
+        disabled={loading || fileProcessingState.isProcessing || isTyping} // Add isTyping
         sx={{
           mb: 2,
           ...textFieldStyles,
@@ -307,10 +309,10 @@ export const ChatForm = ({
             size={isMobile ? "small" : "medium"}
             variant="contained"
             onClick={handleSubmit}
-            disabled={loading || fileProcessingState.isProcessing}
+            disabled={loading || fileProcessingState.isProcessing || isTyping} // Add isTyping
             sx={{
               backgroundColor:
-                loading || fileProcessingState.isProcessing
+                loading || fileProcessingState.isProcessing || isTyping // Add isTyping
                   ? theme.buttonBackground + "80"
                   : theme.buttonBackground,
               "&:hover": { backgroundColor: theme.buttonHoverBackground },
@@ -320,13 +322,14 @@ export const ChatForm = ({
               mr: 1,
             }}
           >
-            {loading ? "Generating..." : "Send"}
+            {loading ? "Generating..." : isTyping ? "Processing..." : "Send"}{" "}
+            {/* Update button text */}
           </Button>
 
           <Tooltip title="Upload PDF document">
             <IconButton
               onClick={triggerFileInput}
-              disabled={loading || fileProcessingState.isProcessing}
+              disabled={loading || fileProcessingState.isProcessing || isTyping} // Add isTyping
               sx={{
                 color: theme.buttonBackground,
                 backgroundColor: "transparent",

@@ -139,7 +139,10 @@ export default function Home() {
       if (fileContext) {
         // Create an enhanced prompt that includes file context for the API
         // But DON'T show this in the UI - the context is only for the backend
-        const enhancedPrompt = `The user is asking about the content of the file "${fileContext.fileName}". Here's the user's question: ${inputs.prompt}\n\nRelevant file context: ${fileContext.context}`;
+        const userQuestion = inputs.prompt.trim(); // Trim whitespace
+        const enhancedPrompt = `The user is asking about the content of the file "${
+          fileContext.fileName
+        }". Here's the user's question: ${userQuestion}\n\nRelevant file context: ${fileContext.context.trim()}`;
 
         // Proceed with chat submission with enhanced prompt
         const result = await submitChat(

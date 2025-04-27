@@ -5,10 +5,9 @@ import { ChatSession } from "../types/chat";
  */
 export const getChatTitle = (session: ChatSession): string => {
   if (session.messages.length === 0) return "New conversation";
-  return (
-    session.messages[0]?.content.substring(0, 30) +
-    (session.messages[0]?.content.length > 30 ? "..." : "")
-  );
+  // Trim any whitespace from the content before processing
+  const content = session.messages[0]?.content?.trim() || "";
+  return content.substring(0, 30) + (content.length > 30 ? "..." : "");
 };
 
 /**

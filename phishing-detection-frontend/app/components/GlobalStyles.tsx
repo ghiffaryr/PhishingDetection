@@ -27,6 +27,7 @@ export const GlobalStyles = ({ theme }: GlobalStylesProps) => {
         max-width: 100%;
         overflow-wrap: break-word;
         color: ${theme.assistantTextColor};
+        text-align: justify;
       }
 
       ${breakpoints.xs} {
@@ -50,6 +51,7 @@ export const GlobalStyles = ({ theme }: GlobalStylesProps) => {
       .text-paragraph {
         margin-bottom: 16px;
         max-width: 100%;
+        text-align: justify;
       }
 
       .code-block {

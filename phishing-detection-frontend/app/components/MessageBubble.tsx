@@ -49,6 +49,7 @@ export const MessageBubble = ({
             sx={{
               fontSize: { xs: "0.9rem", md: "1rem" },
               wordBreak: "break-word",
+              textAlign: "justify",
             }}
           >
             {message.content}

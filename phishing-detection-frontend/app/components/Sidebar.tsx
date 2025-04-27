@@ -83,19 +83,25 @@ export const Sidebar = ({
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "center", // Center items vertically
           justifyContent: "space-between",
-          padding: 2,
           borderBottom: `1px solid ${theme.borderColor}`,
-          pt: { xs: 3, sm: 3.5, md: 4 }, // Adjusted to align with header
-          height: { xs: 56, sm: 64, md: 70 }, // Match AppBar height
+          height: { xs: 56, sm: 64, md: 70 }, // Exact same height as AppBar
+          px: 2, // Horizontal padding only
+          py: 0, // Remove vertical padding and use height+centering instead
         }}
       >
-        <Typography variant="h6" sx={{ color: theme.userTextColor }}>
+        <Typography
+          variant="h6"
+          sx={{
+            color: theme.userTextColor,
+            // No extra margins needed with proper vertical centering
+          }}
+        >
           Chats
         </Typography>
 
-        {/* Add toggle button inside sidebar - aligned with header */}
+        {/* Sidebar toggle button aligned exactly with header toggle */}
         <Tooltip title="Hide sidebar">
           <IconButton
             onClick={toggleSidebar}
@@ -104,6 +110,7 @@ export const Sidebar = ({
               "&:hover": {
                 backgroundColor: "rgba(255,255,255,0.1)",
               },
+              // Remove any vertical margins to rely on flex centering
             }}
           >
             <MenuOpenIcon />

@@ -75,20 +75,22 @@ export const AppHeader = ({
           height: "100%", // Fill the container height
         }}
       >
-        <Tooltip title="Show sidebar">
-          <IconButton
-            color="inherit"
-            onClick={toggleSidebar}
-            sx={{
-              position: "absolute",
-              left: { xs: 8, sm: 12, md: 16 },
-              color: theme.userTextColor,
-              display: sidebarVisible ? "none" : "flex",
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-        </Tooltip>
+        {!sidebarVisible && (
+          <Tooltip title="Show sidebar">
+            <IconButton
+              color="inherit"
+              onClick={toggleSidebar}
+              sx={{
+                position: "absolute",
+                left: { xs: 8, sm: 12, md: 16 },
+                color: theme.userTextColor,
+                display: sidebarVisible ? "none" : "flex",
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Tooltip>
+        )}
 
         <Typography
           variant="h5"

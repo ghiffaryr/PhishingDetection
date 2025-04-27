@@ -1,5 +1,5 @@
 import { Box, Typography } from "@mui/material";
-import { useRef, useEffect } from "react";
+import { useEffect } from "react";
 import { ChatMessage, ThemeConfig } from "../types/chat";
 import MessageBubble from "./MessageBubble";
 
@@ -9,6 +9,9 @@ interface ChatAreaProps {
   displayedAnswer: string;
   currentTypingMessageId: string | null;
   isTyping: boolean;
+  chatSessions: any[];
+  activeSessionId: string;
+  isHydrated: boolean;
 }
 
 export const ChatArea = ({
@@ -17,57 +20,99 @@ export const ChatArea = ({
   displayedAnswer,
   currentTypingMessageId,
   isTyping,
+  chatSessions,
+  activeSessionId,
+  isHydrated,
 }: ChatAreaProps) => {
-  const chatContainerRef = useRef<HTMLDivElement | null>(null);
-
-  // Auto-scroll to bottom of chat when history changes
+  // Auto-scroll to bottom when history changes
   useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
+    if (chatHistory.length > 0) {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth",
+      });
     }
   }, [chatHistory, displayedAnswer]);
 
   return (
-    <>
-      <Typography
-        variant="subtitle1"
-        sx={{
-          color: theme.userTextColor,
-          fontSize: { xs: "0.95rem", md: "1rem" },
-          mb: 1,
-        }}
-      >
-        Conversation
-      </Typography>
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: "800px",
+        margin: "0 auto",
+        mb: "60px", // Reduced bottom margin for dock-like form
+        px: { xs: 2, sm: 3, md: 0 }, // Add horizontal padding for smaller screens
+      }}
+    >
+      {/* Chat info header - aligned with messages */}
       <Box
-        ref={chatContainerRef}
         sx={{
-          height: { xs: 350, sm: 400, md: 450 },
-          overflowY: "auto",
-          border: `1px solid ${theme.borderColor}`,
-          borderRadius: 2,
-          p: { xs: 1, sm: 1.5, md: 2 },
-          backgroundColor: theme.containerBackground,
-          boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.2)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 1,
+          mt: { xs: 1, sm: 2 }, // Add top margin for smaller screens
         }}
       >
-        {chatHistory.length === 0 ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100%",
-              color: theme.inputLabelColor,
-            }}
-          >
-            <Typography variant="body2">
-              Start a conversation by entering a prompt below
-            </Typography>
-          </Box>
-        ) : (
-          chatHistory.map((message) => (
+        <Typography
+          variant="subtitle1"
+          sx={{
+            color: theme.userTextColor,
+            fontSize: { xs: "0.95rem", md: "1rem" },
+          }}
+        >
+          Conversation
+        </Typography>
+
+        <Typography
+          variant="caption"
+          sx={{ color: theme.inputLabelColor, opacity: 0.8 }}
+        >
+          {isHydrated ? (
+            <>
+              Chat {chatSessions.findIndex((s) => s.id === activeSessionId) + 1}{" "}
+              of {chatSessions.length}
+              {chatHistory.length > 0
+                ? ` • ${chatHistory.length} messages`
+                : " • New conversation"}
+            </>
+          ) : (
+            "Loading conversation..."
+          )}
+        </Typography>
+      </Box>
+
+      {/* Chat content */}
+      {chatHistory.length === 0 ? (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "40vh", // Reduced height
+            color: theme.inputLabelColor,
+            backgroundColor: theme.containerBackground,
+            borderRadius: 2,
+            border: `1px solid ${theme.borderColor}`,
+            p: 3,
+            mb: 2,
+          }}
+        >
+          <Typography variant="body2" align="center">
+            Start a conversation by entering a prompt below
+          </Typography>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            mb: 2,
+            // Add breathing room between messages on smaller screens
+            "& > *": {
+              my: { xs: 1.5, sm: 2, md: 2 },
+            },
+          }}
+        >
+          {chatHistory.map((message) => (
             <MessageBubble
               key={message.id}
               message={message}
@@ -76,10 +121,10 @@ export const ChatArea = ({
               currentTypingMessageId={currentTypingMessageId}
               isTyping={isTyping}
             />
-          ))
-        )}
-      </Box>
-    </>
+          ))}
+        </Box>
+      )}
+    </Box>
   );
 };
 

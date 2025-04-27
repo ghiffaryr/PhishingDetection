@@ -17,9 +17,16 @@ import GlobalStyles from "./components/GlobalStyles";
 import { themes } from "./constants/themes";
 
 export default function Home() {
-  // Drawer state
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Define the sidebar width
   const drawerWidth = 280;
+
+  // Add sidebar visibility state
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+
+  // Toggle sidebar function
+  const toggleSidebar = () => {
+    setSidebarVisible((prev) => !prev);
+  };
 
   // Initialize the app
   const {
@@ -30,6 +37,13 @@ export default function Home() {
     initialChatSessions,
     changeTheme,
   } = useInitialization();
+
+  // Auto-hide sidebar on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarVisible(false);
+    }
+  }, [isMobile]);
 
   // Initialize chat sessions
   const {
@@ -353,22 +367,14 @@ export default function Home() {
         color: theme.userTextColor,
         minHeight: "100vh",
         width: "100%",
-        position: "absolute",
-        top: 0,
-        left: 0,
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        paddingBottom: "120px", // Ensure space for the sticky form
       }}
     >
-      <AppHeader
-        setDrawerOpen={setDrawerOpen}
-        theme={theme}
-        themes={themes}
-        currentTheme={currentTheme}
-        changeTheme={changeTheme}
-      />
-
+      {/* Sidebar with visibility control */}
       <Sidebar
-        drawerOpen={drawerOpen}
-        setDrawerOpen={setDrawerOpen}
         drawerWidth={drawerWidth}
         theme={theme}
         chatSessions={chatSessions}
@@ -377,26 +383,57 @@ export default function Home() {
         handleSessionChange={handleSessionChangeWithCleanup}
         handleDeleteSession={handleDeleteSessionWithEvent}
         isHydrated={isHydrated}
+        isMobile={isMobile}
+        visible={sidebarVisible}
+        toggleSidebar={toggleSidebar} // Add toggleSidebar prop
       />
 
-      <Container
+      {/* App header with sidebar toggle */}
+      <AppHeader
+        theme={theme}
+        themes={themes}
+        currentTheme={currentTheme}
+        changeTheme={changeTheme}
+        sidebarWidth={drawerWidth}
+        sidebarVisible={sidebarVisible}
+        toggleSidebar={toggleSidebar}
+      />
+
+      {/* Main content area - direct flow with main page scroll */}
+      <Box
+        component="main"
+        onClick={() => {
+          // Close sidebar when clicking main area (especially helpful on mobile)
+          if (isMobile && sidebarVisible) {
+            toggleSidebar();
+          }
+        }}
         sx={{
-          mt: { xs: 2, sm: 3, md: 4 },
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          px: { xs: 1, sm: 2, md: 3 },
+          flexGrow: 1,
+          width: {
+            xs: "100%",
+            md: sidebarVisible ? `calc(100% - ${drawerWidth}px)` : "100%",
+          },
+          ml: {
+            xs: 0,
+            md: sidebarVisible ? `${drawerWidth}px` : 0,
+          },
+          pt: 8, // Add padding for AppBar height
+          transition: "margin-left 0.3s, width 0.3s",
         }}
       >
         {/* Use the key to force remount when switching sessions */}
-        <div key={`chat-interface-${completionKey}-${activeSessionId}`}>
+        <div
+          key={`chat-interface-${completionKey}-${activeSessionId}`}
+          style={{ width: "100%" }}
+        >
           <ChatInterface
             theme={theme}
             chatSessions={chatSessions}
             activeSessionId={activeSessionId}
             isHydrated={isHydrated}
             isMobile={isMobile}
-            chatHistory={enhancedChatHistory} // Use our enhanced history
+            chatHistory={enhancedChatHistory}
             inputs={inputs}
             handleChange={handleChange}
             handleKeyNext={handleKeyNext}
@@ -408,9 +445,11 @@ export default function Home() {
             error={error}
             loading={loading || isSubmitting}
             onFileContextGenerated={handleFileContextGenerated}
+            sidebarVisible={sidebarVisible}
+            toggleSidebar={toggleSidebar} // Pass toggle function to ChatInterface
           />
         </div>
-      </Container>
+      </Box>
 
       <GlobalStyles theme={theme} />
     </Box>

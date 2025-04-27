@@ -8,10 +8,12 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  InputAdornment,
 } from "@mui/material";
 import { useRef, useState, useCallback } from "react";
 import { ThemeConfig } from "../types/chat";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
+import SendIcon from "@mui/icons-material/Send";
 import axios from "axios";
 
 interface ChatFormProps {
@@ -27,8 +29,10 @@ interface ChatFormProps {
   loading: boolean;
   error: string;
   isMobile: boolean;
-  isTyping: boolean; // Add isTyping prop
+  isTyping: boolean;
   onFileContextGenerated?: (context: string, fileName: string) => void;
+  compact?: boolean;
+  dockMode?: boolean;
 }
 
 export const ChatForm = ({
@@ -41,8 +45,10 @@ export const ChatForm = ({
   loading,
   error,
   isMobile,
-  isTyping, // Add isTyping to destructuring
+  isTyping,
   onFileContextGenerated,
+  compact = false,
+  dockMode = false,
 }: ChatFormProps) => {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -230,6 +236,7 @@ export const ChatForm = ({
     [onFileContextGenerated]
   );
 
+  // Handle file select
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -251,6 +258,187 @@ export const ChatForm = ({
     }));
   };
 
+  // For dock mode, use a horizontal layout with auto-growing prompt
+  if (dockMode) {
+    return (
+      <>
+        {/* Hidden file input */}
+        <input
+          type="file"
+          accept="application/pdf"
+          style={{ display: "none" }}
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+        />
+
+        <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
+          {/* Top row: Prompt field only */}
+          <Box sx={{ width: "100%", mb: 1 }}>
+            {/* Main prompt field with send button adornment - auto grows */}
+            <TextField
+              fullWidth
+              name="prompt"
+              placeholder="Ask a question..."
+              onChange={handleChange}
+              value={inputs.prompt}
+              onKeyDown={handleKeyNextSubmit}
+              inputRef={(el) => (inputRefs.current[1] = el)}
+              disabled={loading || fileProcessingState.isProcessing || isTyping}
+              size="small"
+              variant="outlined"
+              multiline
+              maxRows={5}
+              minRows={1}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment
+                    position="end"
+                    sx={{ alignSelf: "flex-end", pb: 0.5 }}
+                  >
+                    <IconButton
+                      onClick={handleSubmit}
+                      disabled={
+                        loading ||
+                        fileProcessingState.isProcessing ||
+                        isTyping ||
+                        !inputs.prompt.trim()
+                      }
+                      size="small"
+                      sx={{
+                        color: theme.buttonTextColor,
+                        backgroundColor:
+                          loading ||
+                          fileProcessingState.isProcessing ||
+                          isTyping ||
+                          !inputs.prompt.trim()
+                            ? theme.buttonBackground + "80"
+                            : theme.buttonBackground,
+                        "&:hover": {
+                          backgroundColor: theme.buttonHoverBackground,
+                        },
+                        width: 32,
+                        height: 32,
+                      }}
+                    >
+                      <SendIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                "& .MuiInputBase-input": {
+                  color: theme.inputTextColor,
+                  fontSize: "0.9rem",
+                  py: 1,
+                  overflowY: "auto",
+                  maxHeight: "150px",
+                },
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": { borderColor: theme.inputBorderColor },
+                  "&:hover fieldset": {
+                    borderColor: theme.inputHoverBorderColor,
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: theme.buttonBackground,
+                  },
+                },
+              }}
+            />
+          </Box>
+
+          {/* Bottom row: Model name field with file upload button */}
+          <Box sx={{ display: "flex", width: "100%", alignItems: "center" }}>
+            {/* Model name field */}
+            <TextField
+              name="model_name"
+              value={inputs.model_name}
+              onChange={handleChange}
+              onKeyDown={(e) => handleKeyNext(e, 1)}
+              placeholder="Model name"
+              disabled={loading || fileProcessingState.isProcessing || isTyping}
+              variant="outlined"
+              size="small"
+              sx={{
+                width: "calc(100% - 50px)", // Exactly prompt width minus button width + margin
+                "& .MuiInputBase-input": {
+                  color: theme.inputTextColor,
+                  fontSize: "0.85rem",
+                  py: 0.75,
+                },
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": { borderColor: theme.inputBorderColor },
+                  "&:hover fieldset": {
+                    borderColor: theme.inputHoverBorderColor,
+                  },
+                },
+              }}
+            />
+
+            {/* File upload button - next to model name */}
+            <Tooltip title="Upload PDF document">
+              <IconButton
+                onClick={triggerFileInput}
+                disabled={
+                  loading || fileProcessingState.isProcessing || isTyping
+                }
+                size="medium"
+                sx={{
+                  color: theme.buttonBackground,
+                  backgroundColor: "transparent",
+                  border: `1px solid ${theme.inputBorderColor}`,
+                  borderRadius: 1,
+                  padding: "6px",
+                  ml: 1, // 8px in MUI
+                  width: "38px",
+                  height: "38px",
+                  flexShrink: 0, // Prevent button from shrinking
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.05)",
+                    borderColor: theme.inputHoverBorderColor,
+                  },
+                }}
+              >
+                {fileProcessingState.isProcessing ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  <AttachFileIcon fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        {/* Error display below the form */}
+        {(error || fileProcessingState.error) && (
+          <Typography
+            color="#ff6b6b"
+            variant="caption"
+            sx={{ mt: 0.5, display: "block" }}
+          >
+            {error || fileProcessingState.error}
+          </Typography>
+        )}
+
+        {/* Notification for file processing */}
+        <Snackbar
+          open={fileProcessingState.showNotification}
+          autoHideDuration={6000}
+          onClose={handleCloseNotification}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        >
+          <Alert
+            onClose={handleCloseNotification}
+            severity={fileProcessingState.notificationType}
+            sx={{ width: "100%" }}
+          >
+            {fileProcessingState.notificationMessage}
+          </Alert>
+        </Snackbar>
+      </>
+    );
+  }
+
+  // Original layout for non-dock mode
   return (
     <>
       {/* Model name field */}
@@ -263,11 +451,15 @@ export const ChatForm = ({
         value={inputs.model_name}
         onKeyDown={(e) => handleKeyNext(e, 1)}
         inputRef={(el) => (inputRefs.current[0] = el)}
-        disabled={loading || fileProcessingState.isProcessing || isTyping} // Add isTyping
+        disabled={loading || fileProcessingState.isProcessing || isTyping}
         sx={{
           ...textFieldStyles,
-          mb: 2,
+          mb: compact ? 1 : 2,
+          "& .MuiInputBase-root": {
+            fontSize: compact ? "0.9rem" : "inherit",
+          },
         }}
+        size={compact ? "small" : "medium"}
       />
 
       {/* Prompt field */}
@@ -281,11 +473,13 @@ export const ChatForm = ({
         value={inputs.prompt}
         onKeyDown={handleKeyNextSubmit}
         inputRef={(el) => (inputRefs.current[1] = el)}
-        disabled={loading || fileProcessingState.isProcessing || isTyping} // Add isTyping
+        disabled={loading || fileProcessingState.isProcessing || isTyping}
+        rows={compact ? 1 : 2}
         sx={{
-          mb: 2,
+          mb: compact ? 1 : 2,
           ...textFieldStyles,
         }}
+        size={compact ? "small" : "medium"}
       />
 
       {/* Hidden file input */}
@@ -297,6 +491,7 @@ export const ChatForm = ({
         onChange={handleFileSelect}
       />
 
+      {/* Action buttons */}
       <Box
         sx={{
           display: "flex",
@@ -309,10 +504,10 @@ export const ChatForm = ({
             size={isMobile ? "small" : "medium"}
             variant="contained"
             onClick={handleSubmit}
-            disabled={loading || fileProcessingState.isProcessing || isTyping} // Add isTyping
+            disabled={loading || fileProcessingState.isProcessing || isTyping}
             sx={{
               backgroundColor:
-                loading || fileProcessingState.isProcessing || isTyping // Add isTyping
+                loading || fileProcessingState.isProcessing || isTyping
                   ? theme.buttonBackground + "80"
                   : theme.buttonBackground,
               "&:hover": { backgroundColor: theme.buttonHoverBackground },
@@ -322,14 +517,13 @@ export const ChatForm = ({
               mr: 1,
             }}
           >
-            {loading ? "Generating..." : isTyping ? "Processing..." : "Send"}{" "}
-            {/* Update button text */}
+            {loading ? "Generating..." : isTyping ? "Processing..." : "Send"}
           </Button>
 
           <Tooltip title="Upload PDF document">
             <IconButton
               onClick={triggerFileInput}
-              disabled={loading || fileProcessingState.isProcessing || isTyping} // Add isTyping
+              disabled={loading || fileProcessingState.isProcessing || isTyping}
               sx={{
                 color: theme.buttonBackground,
                 backgroundColor: "transparent",

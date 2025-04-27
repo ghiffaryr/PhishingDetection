@@ -1,31 +1,37 @@
 import {
   AppBar,
   Container,
-  IconButton,
   Typography,
   Box,
   Button,
   Menu,
   MenuItem,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import { ThemeConfig } from "../types/chat";
 import { useState } from "react";
+import MenuIcon from "@mui/icons-material/Menu";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 
 interface AppHeaderProps {
-  setDrawerOpen: (open: boolean) => void;
   theme: ThemeConfig;
   themes: Record<string, ThemeConfig>;
   currentTheme: string;
   changeTheme: (themeKey: string) => void;
+  sidebarWidth: number;
+  sidebarVisible: boolean;
+  toggleSidebar: () => void;
 }
 
 export const AppHeader = ({
-  setDrawerOpen,
   theme,
   themes,
   currentTheme,
   changeTheme,
+  sidebarWidth,
+  sidebarVisible,
+  toggleSidebar,
 }: AppHeaderProps) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const open = Boolean(menuAnchor);
@@ -44,7 +50,19 @@ export const AppHeader = ({
   };
 
   return (
-    <AppBar position="static" sx={{ backgroundColor: theme.appBar }}>
+    <AppBar
+      position="fixed"
+      sx={{
+        backgroundColor: theme.appBar,
+        width: {
+          xs: "100%",
+          md: sidebarVisible ? `calc(100% - ${sidebarWidth}px)` : "100%",
+        },
+        ml: { xs: 0, md: sidebarVisible ? `${sidebarWidth}px` : 0 },
+        zIndex: 1200,
+        transition: "margin-left 0.3s, width 0.3s",
+      }}
+    >
       <Container
         sx={{
           display: "flex",
@@ -55,19 +73,20 @@ export const AppHeader = ({
           position: "relative",
         }}
       >
-        <IconButton
-          color="inherit"
-          aria-label="open drawer"
-          onClick={() => setDrawerOpen(true)}
-          edge="start"
-          sx={{
-            position: "absolute",
-            left: { xs: 8, sm: 12, md: 16 },
-            color: theme.userTextColor,
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
+        {/* Sidebar toggle button */}
+        <Tooltip title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}>
+          <IconButton
+            color="inherit"
+            onClick={toggleSidebar}
+            sx={{
+              position: "absolute",
+              left: { xs: 8, sm: 12, md: 16 },
+              color: theme.userTextColor,
+            }}
+          >
+            {sidebarVisible ? <MenuOpenIcon /> : <MenuIcon />}
+          </IconButton>
+        </Tooltip>
 
         <Typography
           variant="h5"

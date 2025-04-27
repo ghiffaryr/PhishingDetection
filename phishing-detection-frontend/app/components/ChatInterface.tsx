@@ -1,11 +1,12 @@
-import { Card, CardContent, Typography } from "@mui/material";
+import { Box, useMediaQuery, useTheme as useMuiTheme } from "@mui/material";
 import { ChatMessage, ThemeConfig, ChatSession } from "../types/chat";
 import ChatArea from "./ChatArea";
 import ChatForm from "./ChatForm";
+import { useCallback } from "react";
 
 interface ChatInterfaceProps {
   theme: ThemeConfig;
-  chatSessions: ChatSession[]; // Update to use the ChatSession type
+  chatSessions: ChatSession[];
   activeSessionId: string;
   isHydrated: boolean;
   isMobile: boolean;
@@ -24,6 +25,8 @@ interface ChatInterfaceProps {
   error: string;
   loading: boolean;
   onFileContextGenerated?: (context: string, fileName: string) => void;
+  sidebarVisible: boolean;
+  toggleSidebar?: () => void; // Add optional toggle function
 }
 
 export const ChatInterface = ({
@@ -44,77 +47,94 @@ export const ChatInterface = ({
   error,
   loading,
   onFileContextGenerated,
+  sidebarVisible,
+  toggleSidebar,
 }: ChatInterfaceProps) => {
+  const muiTheme = useMuiTheme();
+  // Use the built-in MUI breakpoint system for consistency
+  const isMdUp = useMediaQuery(muiTheme.breakpoints.up("md"));
+  const isMobileView = useMediaQuery(muiTheme.breakpoints.down("md"));
+
+  // Calculate actual sidebar impact on layout
+  const sidebarAffectsLayout = isMdUp && sidebarVisible;
+
+  // Handle click on main area to close sidebar (mobile only)
+  const handleContentClick = useCallback(() => {
+    if (isMobileView && sidebarVisible && toggleSidebar) {
+      toggleSidebar();
+    }
+  }, [isMobileView, sidebarVisible, toggleSidebar]);
+
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        width: "100%",
-        maxWidth: { xs: "95vw", sm: "90vw", md: 800 },
-        minWidth: { xs: "auto", sm: "auto", md: 512 },
-        backgroundColor: theme.cardBackground,
-        borderColor: theme.borderColor,
-      }}
+    <Box
+      sx={{ width: "100%" }}
+      onClick={handleContentClick} // Add click handler to close sidebar
     >
-      <CardContent sx={{ py: 0.5, px: { xs: 1.5, md: 2 } }}>
-        <Typography
-          variant="caption"
-          sx={{ color: theme.inputLabelColor, opacity: 0.8 }}
-        >
-          {isHydrated ? (
-            <>
-              Chat {chatSessions.findIndex((s) => s.id === activeSessionId) + 1}{" "}
-              of {chatSessions.length}
-              {chatHistory.length > 0
-                ? ` • ${chatHistory.length} messages`
-                : " • New conversation"}
-            </>
-          ) : (
-            "Loading conversation..."
-          )}
-        </Typography>
-      </CardContent>
+      {/* Chat messages - uses main page scroll */}
+      <ChatArea
+        chatHistory={chatHistory}
+        theme={theme}
+        displayedAnswer={displayedAnswer}
+        currentTypingMessageId={currentTypingMessageId}
+        isTyping={isTyping}
+        chatSessions={chatSessions}
+        activeSessionId={activeSessionId}
+        isHydrated={isHydrated}
+      />
 
-      {/* Conversation area now at the top */}
-      <CardContent sx={{ py: { xs: 1, md: 2 }, px: { xs: 1.5, md: 2 } }}>
-        <ChatArea
-          chatHistory={chatHistory}
-          theme={theme}
-          displayedAnswer={displayedAnswer}
-          currentTypingMessageId={currentTypingMessageId}
-          isTyping={isTyping}
-        />
-      </CardContent>
-
-      {/* Model name input in the middle */}
-      <CardContent
+      {/* Dock-like form at the bottom with auto-growing height */}
+      <Box
         sx={{
-          py: { xs: 0.5, md: 1 },
-          px: { xs: 1.5, md: 2 },
-          pb: { xs: 1.5, md: 2 },
+          position: "fixed",
+          bottom: 0,
+          left: { xs: 0, md: sidebarVisible ? "280px" : 0 },
+          right: 0,
+          zIndex: 1200,
+          padding: { xs: "8px", md: "10px" },
+          transition: "left 0.3s",
+          backgroundColor: `${theme.background}e8`,
+          backdropFilter: "blur(10px)",
+          borderTop: `1px solid ${theme.borderColor}`,
+          boxShadow: "0 -2px 8px rgba(0,0,0,0.08)",
+          maxWidth: {
+            xs: "100%",
+            md: sidebarVisible ? `calc(100% - 280px)` : "100%",
+          },
+          maxHeight: "40vh", // Set maximum height for very large inputs
+          overflowY: "auto", // Add scrolling if needed
         }}
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
+        <Box
+          sx={{
+            maxWidth: "800px",
+            margin: "0 auto",
+            width: "100%",
           }}
         >
-          <ChatForm
-            inputs={inputs}
-            handleChange={handleChange}
-            handleSubmit={handleSubmit}
-            handleKeyNext={handleKeyNext}
-            handleKeyNextSubmit={handleKeyNextSubmit}
-            theme={theme}
-            loading={loading}
-            error={error}
-            isMobile={isMobile}
-            isTyping={isTyping} // Pass isTyping prop
-            onFileContextGenerated={onFileContextGenerated}
-          />
-        </form>
-      </CardContent>
-    </Card>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+          >
+            <ChatForm
+              inputs={inputs}
+              handleChange={handleChange}
+              handleSubmit={handleSubmit}
+              handleKeyNext={handleKeyNext}
+              handleKeyNextSubmit={handleKeyNextSubmit}
+              theme={theme}
+              loading={loading}
+              error={error}
+              isMobile={isMobile}
+              isTyping={isTyping}
+              onFileContextGenerated={onFileContextGenerated}
+              compact={true}
+              dockMode={true}
+            />
+          </form>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

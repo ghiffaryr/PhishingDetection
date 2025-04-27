@@ -1,5 +1,4 @@
 import {
-  Drawer,
   Box,
   Typography,
   IconButton,
@@ -10,17 +9,23 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Paper,
+  Drawer,
+  useMediaQuery,
+  useTheme as useMuiTheme,
+  Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ChatIcon from "@mui/icons-material/Chat";
-import CloseIcon from "@mui/icons-material/Close";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CloseIcon from "@mui/icons-material/Close";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
+import MenuIcon from "@mui/icons-material/Menu";
 import { ChatSession, ThemeConfig } from "../types/chat";
 import { getChatTitle, formatSessionDate } from "../utils/formatting";
+import { useEffect, useState } from "react";
 
 interface SidebarProps {
-  drawerOpen: boolean;
-  setDrawerOpen: (open: boolean) => void;
   drawerWidth: number;
   theme: ThemeConfig;
   chatSessions: ChatSession[];
@@ -29,11 +34,12 @@ interface SidebarProps {
   handleSessionChange: (sessionId: string) => void;
   handleDeleteSession: (sessionId: string, event: React.MouseEvent) => void;
   isHydrated: boolean;
+  isMobile: boolean;
+  visible: boolean;
+  toggleSidebar: () => void; // Add toggleSidebar prop
 }
 
 export const Sidebar = ({
-  drawerOpen,
-  setDrawerOpen,
   drawerWidth,
   theme,
   chatSessions,
@@ -42,24 +48,38 @@ export const Sidebar = ({
   handleSessionChange,
   handleDeleteSession,
   isHydrated,
+  isMobile,
+  visible,
+  toggleSidebar,
 }: SidebarProps) => {
-  return (
-    <Drawer
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        "& .MuiDrawer-paper": {
-          width: drawerWidth,
-          boxSizing: "border-box",
-          backgroundColor: theme.cardBackground,
-          color: theme.userTextColor,
-          borderRight: `1px solid ${theme.borderColor}`,
-        },
-      }}
-      anchor="left"
-      open={drawerOpen}
-      onClose={() => setDrawerOpen(false)}
-    >
+  const muiTheme = useMuiTheme();
+  const isMobileView = useMediaQuery(muiTheme.breakpoints.down("md"));
+
+  // Track actual sidebar visibility that responds to both props and screen size
+  const [actualVisibility, setActualVisibility] = useState(
+    visible && !isMobileView
+  );
+
+  // Update visibility whenever screen size or props change
+  useEffect(() => {
+    if (isMobileView) {
+      // On mobile, visibility is controlled by the visible prop
+      setActualVisibility(visible);
+    } else {
+      // On desktop, always show if visible is true
+      setActualVisibility(visible);
+    }
+  }, [isMobileView, visible]);
+
+  // Handler for toggle button click
+  const handleToggleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleSidebar();
+  };
+
+  // Use Paper for desktop permanent drawer and Drawer for mobile
+  const sidebarContent = (
+    <Box>
       <Box
         sx={{
           display: "flex",
@@ -67,25 +87,40 @@ export const Sidebar = ({
           justifyContent: "space-between",
           padding: 2,
           borderBottom: `1px solid ${theme.borderColor}`,
+          pt: 10, // Provide space for the app bar
         }}
       >
         <Typography variant="h6" sx={{ color: theme.userTextColor }}>
           Chats
         </Typography>
-        <IconButton
-          onClick={() => setDrawerOpen(false)}
-          sx={{ color: theme.userTextColor }}
-        >
-          <CloseIcon />
-        </IconButton>
+
+        {/* Add toggle button inside sidebar */}
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Tooltip title={visible ? "Hide sidebar" : "Show sidebar"}>
+            <IconButton
+              onClick={handleToggleClick}
+              size="small"
+              sx={{
+                color: theme.inputLabelColor,
+                "&:hover": {
+                  color: theme.userTextColor,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                },
+              }}
+            >
+              {visible ? (
+                <MenuOpenIcon fontSize="small" />
+              ) : (
+                <MenuIcon fontSize="small" />
+              )}
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {/* New Chat button in sidebar */}
       <Button
-        onClick={() => {
-          handleNewChat();
-          setDrawerOpen(false);
-        }}
+        onClick={handleNewChat}
         startIcon={<AddIcon />}
         variant="outlined"
         sx={{
@@ -104,7 +139,9 @@ export const Sidebar = ({
       <Divider sx={{ borderColor: theme.borderColor }} />
 
       {/* Chat list */}
-      <List sx={{ pt: 0 }}>
+      <List sx={{ pt: 0, overflowY: "auto", pb: "140px" }}>
+        {" "}
+        {/* Added padding to account for the chat form drawer */}
         {isHydrated &&
           chatSessions.map((session) => (
             <ListItem
@@ -151,7 +188,7 @@ export const Sidebar = ({
                 </ListItemIcon>
                 <ListItemText
                   primary={getChatTitle(session)}
-                  secondary={formatSessionDate(session.createdAt)}
+                  secondary={formatSessionDate(session.created)}
                   primaryTypographyProps={{
                     noWrap: true,
                     style: { color: theme.userTextColor },
@@ -164,7 +201,52 @@ export const Sidebar = ({
             </ListItem>
           ))}
       </List>
-    </Drawer>
+    </Box>
+  );
+
+  if (isMobileView) {
+    return (
+      <Drawer
+        variant="temporary"
+        open={actualVisibility}
+        onClose={toggleSidebar}
+        sx={{
+          width: drawerWidth,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: drawerWidth,
+            boxSizing: "border-box",
+            backgroundColor: theme.cardBackground,
+            color: theme.userTextColor,
+            borderRight: `1px solid ${theme.borderColor}`,
+          },
+        }}
+      >
+        {sidebarContent}
+      </Drawer>
+    );
+  }
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        width: drawerWidth,
+        height: "100vh",
+        position: "fixed",
+        left: actualVisibility ? 0 : -drawerWidth,
+        top: 0,
+        zIndex: 100,
+        backgroundColor: theme.cardBackground,
+        color: theme.userTextColor,
+        borderRight: `1px solid ${theme.borderColor}`,
+        display: "block", // Always render but may be off-screen
+        overflow: "hidden",
+        transition: "left 0.3s ease-in-out", // Smoother transition
+      }}
+    >
+      {sidebarContent}
+    </Paper>
   );
 };
 

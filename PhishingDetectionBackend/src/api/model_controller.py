@@ -10,7 +10,7 @@ class ModelGenerateController:
         required_keys = ["model_name", "prompt"]
         default_optional_keys = {
             "context": "",
-            "max_new_tokens": 1024,
+            "max_new_tokens": 2048,
             "temperature": 1.0,
             "top_k": 50,
             "top_p": 1.0,

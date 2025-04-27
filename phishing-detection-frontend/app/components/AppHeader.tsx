@@ -61,6 +61,7 @@ export const AppHeader = ({
         ml: { xs: 0, md: sidebarVisible ? `${sidebarWidth}px` : 0 },
         zIndex: 1200,
         transition: "margin-left 0.3s, width 0.3s",
+        height: { xs: 56, sm: 64, md: 70 }, // Explicitly set height to match sidebar
       }}
     >
       <Container
@@ -71,10 +72,10 @@ export const AppHeader = ({
           justifyContent: "center",
           py: { xs: 0.5, sm: 0.75, md: 1 },
           position: "relative",
+          height: "100%", // Fill the container height
         }}
       >
-        {/* Sidebar toggle button */}
-        <Tooltip title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}>
+        <Tooltip title="Show sidebar">
           <IconButton
             color="inherit"
             onClick={toggleSidebar}
@@ -82,9 +83,10 @@ export const AppHeader = ({
               position: "absolute",
               left: { xs: 8, sm: 12, md: 16 },
               color: theme.userTextColor,
+              display: sidebarVisible ? "none" : "flex",
             }}
           >
-            {sidebarVisible ? <MenuOpenIcon /> : <MenuIcon />}
+            <MenuIcon />
           </IconButton>
         </Tooltip>
 

@@ -87,35 +87,28 @@ export const Sidebar = ({
           justifyContent: "space-between",
           padding: 2,
           borderBottom: `1px solid ${theme.borderColor}`,
-          pt: 10, // Provide space for the app bar
+          pt: { xs: 3, sm: 3.5, md: 4 }, // Adjusted to align with header
+          height: { xs: 56, sm: 64, md: 70 }, // Match AppBar height
         }}
       >
         <Typography variant="h6" sx={{ color: theme.userTextColor }}>
           Chats
         </Typography>
 
-        {/* Add toggle button inside sidebar */}
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Tooltip title={visible ? "Hide sidebar" : "Show sidebar"}>
-            <IconButton
-              onClick={handleToggleClick}
-              size="small"
-              sx={{
-                color: theme.inputLabelColor,
-                "&:hover": {
-                  color: theme.userTextColor,
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                },
-              }}
-            >
-              {visible ? (
-                <MenuOpenIcon fontSize="small" />
-              ) : (
-                <MenuIcon fontSize="small" />
-              )}
-            </IconButton>
-          </Tooltip>
-        </Box>
+        {/* Add toggle button inside sidebar - aligned with header */}
+        <Tooltip title="Hide sidebar">
+          <IconButton
+            onClick={toggleSidebar}
+            sx={{
+              color: theme.userTextColor,
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+              },
+            }}
+          >
+            <MenuOpenIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* New Chat button in sidebar */}
